@@ -1,0 +1,46 @@
+services:
+    chat_web:
+        container_name: chat_web
+        image: nginx:alpine
+        ports:
+            - "8850:80"
+        volumes:
+            - ./:/var/www
+            - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf
+        depends_on:
+            - chat_app
+        networks:
+            - chat_network
+    chat_app:
+        container_name: chat_app
+        build:
+            context: .
+            dockerfile: ./docker/Dockerfile
+        depends_on:
+            - chat_db
+        volumes:
+            - ./:/var/www
+        networks:
+            - chat_network
+        ports:
+            - "9150:9010"
+    
+    chat_db:
+        image: mysql
+        container_name: mysql
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+        volumes:
+            - chat_database:/var/lib/mysql
+        networks:
+            - chat_network
+        expose:
+            - 3355
+networks:
+    chat_network:
+        driver: bridge
+volumes:
+    chat_database:

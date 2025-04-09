@@ -38,10 +38,7 @@ RUN apt-get update && apt-get install -y \
 # Install redis extension
 RUN pecl install redis && docker-php-ext-enable redis
 
-# Configure PHP
-# RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
-
-# Set recommended PHP.ini settings
+# PHP settings
 RUN { \
         echo 'opcache.memory_consumption=128'; \
         echo 'opcache.interned_strings_buffer=8'; \
@@ -51,7 +48,7 @@ RUN { \
         echo 'opcache.enable_cli=1'; \
     } > /usr/local/etc/php/conf.d/opcache-recommended.ini
 
-# Set PHP-FPM configuration
+# PHP-FPM config
 RUN { \
         echo '[global]'; \
         echo 'daemonize = no'; \
@@ -61,10 +58,8 @@ RUN { \
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-ARG user
-ARG bin
 
-# Create system user to run Composer and Artisan Commands
+# Create user
 RUN useradd -G www-data,root -u 1000 -d /home/dev dev
 RUN mkdir -p /home/dev/.composer && \
     chown -R dev:dev /home/dev
@@ -72,18 +67,18 @@ RUN mkdir -p /home/dev/.composer && \
 # Set working directory
 WORKDIR /var/www
 
-# Copy existing application directory
+# Copy source code
 COPY --chown=dev:dev . .
 
-# Switch to non-root user
-USER dev
+# Install PHP dependencies
+RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
-# Install dependencies
-#RUN composer install --no-interaction --no-progress --prefer-dist
-
-# Switch back to root for operations that need it
-USER root
-
-# Set recommended directory permissions
+# Set proper permissions
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
-RUN php artisan reverb:start && php artisan queue:listen
+
+# ⚠️ Don't run artisan commands inside Dockerfile
+# Laravel queue and reverb should be started via entrypoint or docker-compose command
+# because they are long-running processes
+
+# Set default user
+USER dev

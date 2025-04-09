@@ -13,8 +13,6 @@ services:
             - postgres
         ports:
             - "8080:8080"
-    #        command: >
-    #            sh -c "php artisan reverb:start && php artisan queue:listen"
 
     postgres:
         image: postgres
@@ -29,8 +27,7 @@ services:
         networks:
             - chat_app_network
         ports:
-            -   "5432:5432"  # Expose PostgreSQL on port 5432
-
+            -   "5432:5432"  
     pgadmin:
         image: dpage/pgadmin4
         container_name: chat_pgadmin
